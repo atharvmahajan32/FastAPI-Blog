@@ -100,6 +100,27 @@ async def get_reasons(session: AsyncSession = Depends(get_async_session)):
         
     return {"posts": reasons_data}
 
+@app.delete('/reasons/{reason_id}')
+async def delete_reason(
+    reason_id: str,
+    session: AsyncSession = Depends(get_async_session),
+    _admin: bool = Depends(require_admin)
+):
+    try:
+        reason_uuid = uuid.UUID(reason_id)
+        result = await session.execute(select(Reason).where(Reason.id == reason_uuid))
+        reason = result.scalars().first()
+        
+        if not reason:
+            raise HTTPException(status_code=404, detail='Reason not found')
+        
+        await session.delete(reason)
+        await session.commit()
+        
+        return {'success': True, 'message': 'Reason deleted successfully'}
+    except ValueError:
+        raise HTTPException(status_code=400, detail='Invalid reason ID format')
+
 @app.post('/upload')
 async def upload(
     title: str = Form(''),
@@ -133,6 +154,28 @@ async def get(
         )
         
     return {"posts": posts_data}
+
+@app.get('/get/{post_id}')
+async def get_post_by_id(
+    post_id: str,
+    session: AsyncSession = Depends(get_async_session)
+):
+    try:
+        post_uuid = uuid.UUID(post_id)
+        result = await session.execute(select(Post).where(Post.id == post_uuid))
+        post = result.scalars().first()
+        
+        if not post:
+            raise HTTPException(status_code=404, detail='Post not found')
+        
+        return {
+            'id': str(post.id),
+            'title': post.title,
+            'content': post.content,
+            'created_at': post.created_at.isoformat()
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail='Invalid post ID format')
 
 @app.put('/update/{post_id}')
 async def update(
