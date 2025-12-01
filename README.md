@@ -9,15 +9,10 @@ This README documents the project layout, environment variables, endpoints, the 
 ## Table of Contents
 
 - Project layout
-- Quick start
-- Environment variables
-- Authorization and admin flow
 - API endpoints (detailed)
 - Examples (curl / PowerShell)
-- Development & tests
-- Security notes and limitations
-- Next steps / optional improvements
-
+- Notes
+  
 ---
 
 ## Project layout
@@ -29,7 +24,7 @@ backend/
   - `schemas.py`      — Pydantic request/response schemas (if present)
 - `main.py`           — (optional) uvicorn launcher or app import
 - `pyproject.toml`    — project metadata / dependencies
-- `test.db`           — SQLite DB file (if used)
+- `test.db`           — SQLite DB file
 - `README.md`         — this file
 
 ## API Routes
