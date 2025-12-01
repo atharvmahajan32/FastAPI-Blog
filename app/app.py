@@ -232,3 +232,6 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get('/is_alive')
+def keep_alive():
+    return {'alive' : True}
