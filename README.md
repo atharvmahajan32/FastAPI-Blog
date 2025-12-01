@@ -24,7 +24,7 @@ backend/
   - `schemas.py`      — Pydantic request/response schemas (if present)
 - `main.py`           — (optional) uvicorn launcher or app import
 - `pyproject.toml`    — project metadata / dependencies
-- `test.db`           — SQLite DB file (if used)
+- `test.db`           — SQLite DB file
 - `README.md`         — this file
 
 ## API Routes
