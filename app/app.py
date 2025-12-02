@@ -26,7 +26,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["blog.athrv.me", "react-blog-ivory-seven.vercel.app"],
+    allow_origins=["https://blog.athrv.me", "https://react-blog-ivory-seven.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
