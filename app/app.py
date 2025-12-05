@@ -26,19 +26,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 handler = Mangum(app)
 
-ENV = os.environ.get('ENV', 'development').lower()
-
-PRODUCTION_ORIGINS = [
-    "https://blog.athrv.me",
-    "https://react-blog-ivory-seven.vercel.app"
-]
-
-DEVELOPMENT_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-origins = PRODUCTION_ORIGINS if ENV == 'production' else DEVELOPMENT_ORIGINS
+origins = ["https://blog.athrv.me",
+            "https://react-blog-ivory-seven.vercel.app",
+            "http://localhost:3000",]
 
 app.add_middleware(
     CORSMiddleware,
