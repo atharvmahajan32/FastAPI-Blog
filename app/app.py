@@ -26,13 +26,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 handler = Mangum(app)
 
-origins = ["https://blog.athrv.me",
-            "https://react-blog-ivory-seven.vercel.app",
-            "http://localhost:3000"]
+PRODUCTION_ORIGINS = [
+    "https://blog.athrv.me",
+    "https://react-blog-ivory-seven.vercel.app"
+]
+
+DEVELOPMENT_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=PRODUCTION_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
