@@ -10,6 +10,7 @@ from app.schemas import PostCreate, PostUpdate, ReasonCreate
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from contextlib import asynccontextmanager
+from mangum import Mangum
 
 load_dotenv()
 
@@ -23,10 +24,25 @@ async def lifespan(app: FastAPI):
     yield
     
 app = FastAPI(lifespan=lifespan)
+handler = Mangum(app)
+
+ENV = os.environ.get('ENV', 'development').lower()
+
+PRODUCTION_ORIGINS = [
+    "https://blog.athrv.me",
+    "https://react-blog-ivory-seven.vercel.app"
+]
+
+DEVELOPMENT_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+origins = PRODUCTION_ORIGINS if ENV == 'production' else DEVELOPMENT_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://blog.athrv.me", "https://react-blog-ivory-seven.vercel.app"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -232,6 +248,3 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get('/is_alive')
-def keep_alive():
-    return {'alive' : True}
