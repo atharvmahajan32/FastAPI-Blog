@@ -28,7 +28,7 @@ handler = Mangum(app)
 
 origins = ["https://blog.athrv.me",
             "https://react-blog-ivory-seven.vercel.app",
-            "http://localhost:3000",]
+            "http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
