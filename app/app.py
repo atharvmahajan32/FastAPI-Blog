@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import uuid
 import datetime
+import jwt
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Form, Depends
 from fastapi.security import APIKeyHeader
@@ -14,13 +15,17 @@ from mangum import Mangum
 
 load_dotenv()
 
+# JWT Configuration
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_HOURS = 2
+
 # Allow Swagger UI to set the Authorization header
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 @asynccontextmanager 
 async def lifespan(app: FastAPI):
     await create_db_and_tables()
-    app.state.admin_tokens = {}
     yield
     
 app = FastAPI(lifespan=lifespan)
@@ -58,9 +63,14 @@ async def where_to(
     payload = ReasonCreate(name=name, why=why)
 
     if payload.name == os.environ.get('ADMIN') and payload.why == os.environ.get('KEY'):
-        token = uuid.uuid4().hex
-        expiry = datetime.datetime.now() + datetime.timedelta(hours=2)
-        app.state.admin_tokens[token] = expiry
+        # Generate JWT token
+        expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=JWT_EXPIRATION_HOURS)
+        token_payload = {
+            'sub': 'admin',
+            'exp': expiry,
+            'iat': datetime.datetime.now(datetime.timezone.utc)
+        }
+        token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
         return {'admin': True, 'token': token}
     else:
         reason = Reason(name=payload.name, why=payload.why)
@@ -71,17 +81,14 @@ async def where_to(
 
 
 def _is_token_valid(token: str) -> bool:
-    """Check token in app.state and validate expiry."""
-    expiry = app.state.admin_tokens.get(token)
-    if not expiry:
+    """Verify JWT token and check expiry."""
+    try:
+        jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return True
+    except jwt.ExpiredSignatureError:
         return False
-    if expiry < datetime.datetime.now():
-        try:
-            del app.state.admin_tokens[token]
-        except KeyError:
-            pass
+    except jwt.InvalidTokenError:
         return False
-    return True
 
 
 async def require_admin(api_key: str | None = Depends(api_key_header)):
@@ -91,10 +98,21 @@ async def require_admin(api_key: str | None = Depends(api_key_header)):
     """
     if not api_key:
         raise HTTPException(status_code=401, detail='Missing Authorization header')
-    parts = api_key.split()
-    if len(parts) != 2 or parts[0].lower() != 'bearer':
-        raise HTTPException(status_code=401, detail='Invalid Authorization header')
-    token = parts[1]
+    
+    # Handle case where header value might already exclude "Bearer " prefix
+    # or might have different casing due to API Gateway normalization
+    api_key = api_key.strip()
+    
+    # Check if it starts with "Bearer " (case-insensitive)
+    if api_key.lower().startswith('bearer '):
+        token = api_key[7:].strip()  # Remove "Bearer " prefix
+    else:
+        # Maybe the token was sent directly without "Bearer " prefix
+        token = api_key
+    
+    if not token:
+        raise HTTPException(status_code=401, detail='Invalid Authorization header - no token provided')
+    
     if not _is_token_valid(token):
         raise HTTPException(status_code=401, detail='Invalid or expired token')
     return True

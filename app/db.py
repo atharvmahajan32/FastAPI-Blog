@@ -1,13 +1,20 @@
 from collections.abc import AsyncGenerator
+import os
 import uuid
 import datetime
 
+from dotenv import load_dotenv
 from sqlalchemy import Column, String, Text, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase
 
-DATABASE_URL = 'sqlite+aiosqlite:///./test.db'
+load_dotenv()
+
+DATABASE_URL = os.environ.get(
+    'DATABASE_URL',
+    'postgresql+asyncpg://postgres:password@localhost:5432/blog'
+)
 
 
 class Base(DeclarativeBase):
@@ -32,7 +39,11 @@ class Post(Base):
     created_at = Column(DateTime, default=datetime.datetime.now)
     
        
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,  # Verify connections before use (important for Lambda cold starts)
+    pool_recycle=300,    # Recycle connections every 5 minutes
+)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 async def create_db_and_tables():
